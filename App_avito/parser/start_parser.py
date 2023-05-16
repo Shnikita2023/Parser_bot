@@ -4,7 +4,6 @@ from fake_useragent import UserAgent
 from datetime import datetime
 from selectolax.parser import HTMLParser
 from urllib.parse import unquote
-from bd import id_llist
 from bot.database.database import SqLiteClient, Offer
 
 import json
@@ -13,7 +12,7 @@ import sqlite3 as sq
 dict_offer = {}
 SITE = "https://www.avito.ru"
 URL = "https://www.avito.ru/moskva/kvartiry/sdam/na_dlitelnyy_srok-ASgBAgICAkSSA8gQ8AeQUg"
-PATH_BD = r"C:\Users\79991\PycharmProjects\App_avito\bot\database\Avito.db"
+PATH_BD = "/home/nikita/PycharmProjects/Parser_bot/App_avito/bot/database/Avito.db"
 
 
 def start_browser():
@@ -23,9 +22,9 @@ def start_browser():
     options.add_argument(f"user-agent={useragent.random}")
     options.add_argument("--disable-blink-features=AutomationControlled")  # Отключение режима веб-драйвера
     # options.add_argument('headless')  # Отключение фонового режима
-    s = Service(r"C:\Users\79991\PycharmProjects\App_avito\parser_avito\driver\chromedriver.exe")
+    s = Service("/home/nikita/PycharmProjects/Parser_bot/App_avito/parser/driver/chromedriver")
     browser = webdriver.Chrome(service=s, options=options)
-    browser.implicitly_wait(1200)
+    browser.implicitly_wait(120)
     browser.maximize_window()
     return browser
 
@@ -47,6 +46,7 @@ def get_json(city: str, user_id: int):
                     json_text = json_text[1:-1]
                     data = json.loads(json_text)
                     get_json_item(data, user_id)
+                    break
 
         return dict_offer
 
@@ -80,15 +80,6 @@ def get_data(item: dict) -> tuple:
         address = item['geo']["formattedAddress"]
         date = datetime.fromtimestamp(item["sortTimeStamp"] / 1000).strftime("%d.%m.%Y в %H:%M")
         return (offer_id, title, price, address, url, date)
-
-        # offer = {}
-        # offer["offer_id"] = item["id"]
-        # offer["price"] = item["priceDetailed"]["value"]
-        # offer["title"] = item["title"]
-        # offer["url"] = f'{SITE}{item["urlPath"]}'
-        # offer["address"] = item['geo']["formattedAddress"]
-        # offer["date"] = datetime.fromtimestamp(item["sortTimeStamp"] / 1000).strftime("%d.%m.%Y в %H:%M")
-        # return offer
 
     except Exception as Ex:
         print(Ex)

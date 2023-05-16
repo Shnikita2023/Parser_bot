@@ -17,16 +17,15 @@ class Database:
 @dataclass
 class Config:
     tg_bot: TgBot
-    bd: Database
+    # bd: Database
 
 
 def load_config(path: str | None = None) -> Config:
     env = Env()
     env.read_env(path)
-    return Config(tg_bot=TgBot(token=env('BOT_TOKEN'), admin=env('ADMIN')),
-                  bd=Database(host=env("HOST"), user=env("USER"),
-                              password=env("PASSWORD"), db_name=env("DB_NAME")))
-
+    return Config(tg_bot=TgBot(token=env('BOT_TOKEN'), admin=env('ADMIN')))
+                  # bd=Database(host=env("HOST"), user=env("USER"),
+                  #             password=env("PASSWORD"), db_name=env("DB_NAME")))
 
 
 

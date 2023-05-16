@@ -8,7 +8,6 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from selectolax.parser import HTMLParser
 from urllib.parse import unquote
-from bd import id_llist
 import json
 
 
@@ -25,14 +24,14 @@ def start_browser():
     # options.add_argument('headless')  # Отключение фонового режима
     s = Service(r"C:\Users\79991\PycharmProjects\App_avito\parser_avito\driver\chromedriver.exe")
     browser = webdriver.Chrome(service=s, options=options)
-    browser.implicitly_wait(60)
+    browser.implicitly_wait(120)
     browser.maximize_window()
     return browser
 
 
 def get_url_car():
     try:
-        URL = "https://www.avito.ru/moskva/kvartiry/sdam/posutochno/-ASgBAgICAkSSA8gQ8AeSUg?cd=1&s=104"
+        URL = "https://www.avito.ru/moskva/kvartiry/prodam-ASgBAgICAUSSA8YQ?cd=1"
         with start_browser() as browser:
             print(f"###[INFO]### Запись")
             browser.get(url=URL)
