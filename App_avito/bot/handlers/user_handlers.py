@@ -1,105 +1,125 @@
 from aiogram import Router, F
-from aiogram.filters import Command, CommandStart, Text
+from aiogram.filters import Command, CommandStart, Text, StateFilter
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery
+from bot.fsm.states import FSMParserForm
 from bot.keyboards import city_kb, start_kb, kategory_kb, flat_long_button, price_panel
 from bot.lexicon import LEXICON_RU, CITY_EN, PRICE
-from bot.services import get_data, translation_price
-from bot.database.database import User, SqLiteClient
+from bot.services import get_data, translation_price, transfer_text_telegram
+from bot.database.database import User, Database
+
 
 router: Router = Router()
-list_city: list = []
-list_category: list = []
-PATH_BD = "/home/nikita/PycharmProjects/Parser_bot/App_avito/bot/database/Avito.db"
-database = User(SqLiteClient(PATH_BD))
+database = User(Database())
 
 
 # Этот хэндлер срабатывает на команду /start
-@router.message(CommandStart())
+@router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message) -> None:
     user_id = message.from_user.id
     username = message.from_user.username
     chat_id = message.chat.id
     database.setup()
     user = database.get_user(user_id=user_id)
-    list_city.clear()
     if not user:
         database.create_user(user_id=user_id, username=username, chat_id=chat_id)
     database.shutdown()
     await message.answer(text=LEXICON_RU['/start'], reply_markup=start_kb)
 
 
+# Этот хэндлер будет срабатывать на команду "/cancel" в любых состояниях,
+# кроме состояния по умолчанию, и отключать машину состояний
+@router.message(Command(commands='cancel'), ~StateFilter(default_state))
+async def process_cancel_command_state(message: Message, state: FSMContext) -> None:
+    await message.answer(text='Чтобы снова начать парсинг, нажмите /pars')
+    # Сбрасываем состояние
+    await state.clear()
+
+
+# Этот хэндлер будет срабатывать на команду "/cancel" в состоянии
+# по умолчанию и сообщать, что эта команда доступна в машине состояний
+@router.message(Command(commands='cancel'), StateFilter(default_state))
+async def process_cancel_command(message: Message) -> None:
+    await message.answer(text='Отменять нечего. Чтобы начать парсинг, нажмите /pars')
 
 
 # Этот хэндлер срабатывает на команду /help
-@router.message(Command(commands=['help']))
-@router.message(Text(text=['help_button']))
+@router.message(Command(commands=['help']), StateFilter(default_state))
 async def process_help_command(message: Message) -> None:
     await message.answer(text=LEXICON_RU['/help'])
 
 
 # Этот хэндлер для смены города
-@router.message(Command(commands=['gorod']))
-async def process_help_command(message: Message) -> None:
-    list_city.clear()
+@router.message(Command(commands=['gorod']), StateFilter(default_state))
+async def process_help_command(message: Message, state: FSMContext) -> None:
+    await state.set_state(FSMParserForm.name_city)
     await message.answer(text='Выберите город', reply_markup=city_kb)
 
+
 # Этот хэндлер для выбора категории
-@router.callback_query(Text(text=['parsing_button']))
-async def category_command(callback: CallbackQuery) -> None:
+@router.callback_query(Text(text=['parsing_button']), StateFilter(default_state))
+async def category_command(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.message.answer(text='Выберите категорию парсинга', reply_markup=kategory_kb)
+    await state.set_state(FSMParserForm.category_pars)
 
+@router.message(Command(commands=['pars']), StateFilter(default_state))
+async def category_pars(message: Message, state: FSMContext) -> None:
+    await message.answer(text='Выберите категорию парсинга', reply_markup=kategory_kb)
+    await state.set_state(FSMParserForm.category_pars)
 
+@router.message(StateFilter(FSMParserForm.category_pars))
+async def warning_not_pars(message: Message) -> None:
+    await message.answer(text='Выберите одну из категории объявление\n'
+                              'Отправьте команду /cancel для завершение парсинга')
 
 @router.callback_query(Text(text=['flat_long_button',
                                   'flat_short_button',
-                                  'buy_flat_button']))
-async def city_selection(callback: CallbackQuery) -> None:
-    category = callback.data
-    list_category.append(category)
+                                  'buy_flat_button']), StateFilter(FSMParserForm.category_pars))
+async def city_selection(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.update_data(category_pars=callback.data)
     await callback.message.answer(text='Выберите город', reply_markup=city_kb)
+    await state.set_state(FSMParserForm.name_city)
 
-
-@router.message(Text(text=[CITY_EN['moskva'],
-                           CITY_EN["sankt-peterburg"],
-                           CITY_EN['perm'],
-                           CITY_EN['ufa'],
-                           CITY_EN['sochi'],
-                           CITY_EN['ekaterinburg']]))
-async def price_button(message: Message) -> None:
-    price_category = price_panel(list_category[-1])
+@router.message(Text(text=list(CITY_EN.values())), StateFilter(FSMParserForm.name_city))
+async def price_button(message: Message, state: FSMContext) -> None:
+    category = await state.get_data()
+    price_category = price_panel(category["category_pars"])
+    await state.update_data(name_city=message.text)
     await message.answer(text="Выберите ваш бюджет для снятие квартиры", reply_markup=price_category)
-    data_city = message.text
-    list_city.append(data_city)
+    await state.set_state(FSMParserForm.price)
 
+@router.message(StateFilter(FSMParserForm.name_city))
+async def warning_not_city(message: Message) -> None:
+    await message.answer(text='Выберите из списка город и нажмите на него!\n'
+                              'Отправьте команду /cancel для завершение парсинга')
 
-@router.message(Text(text=[PRICE["0-2000"], PRICE["2000-5000"], PRICE["5000-100000"],
-                           PRICE["0-10000"], PRICE["10000-20000"], PRICE["20000-50000"],
-                           PRICE["50000-500000"], PRICE["1000000-3000000"], PRICE["3000000-10000000"],
-                           PRICE["10000000-500000000"], PRICE["500000000-1000000000"]]))
-async def process_parsing(message: Message) -> None:
+@router.message(Text(text=list(PRICE.values())), StateFilter(FSMParserForm.price))
+async def process_parsing(message: Message, state: FSMContext) -> None:
+    await state.update_data(price=message.text)
     await message.answer(text="Ожидайте, пожалуйста...")
     user_id = message.from_user.id
-    price_user = message.text
+    data_state = await state.get_data()
+    category_adit = data_state["category_pars"]
+    name_city = data_state["name_city"]
+    price_user = data_state["price"]
     range_price_list = translation_price(price=price_user)
-    dict_offer = get_data(city=list_city[-1], category=list_category[-1], user_id=user_id, price=range_price_list)
+    dict_offer = get_data(city=name_city, category=category_adit, user_id=user_id, price=range_price_list)
     count = 0
-    for key, value in dict_offer.items():
-        title, price, address, url, date = value
-        title = title.split(",")
-        text = (f"<b>Количество комнат:</b> {title[0]}\n"
-                f"<b>Площадь:</b> {title[1]}\n"
-                f"<b>Этаж:</b> {title[2]}\n"
-                f"<b>Цена:</b> {price} руб\n"
-                f"<b>Ссылка:</b> <a href='{url}'>{' '.join(title)}</a>\n"
-                f"<b>Адрес:</b> {address}\n"
-                f"<b>Дата публикации:</b> {date}")
+    for value in dict_offer.values():
+        text = transfer_text_telegram(value)
         count += 1
         await message.answer(text=text)
-
     if not count:
         text = "Объявлений нету!"
         await message.answer(text=text)
 
-    await message.answer(text="Готово, чтоб продолжить, выбери другую цену "
-                              "или нажмите /gorod для смены города")
+    await state.clear()
+    await message.answer(text="Готово, чтоб начать заново, нажмите /pars\n"
+                              "Можно вернуться в меню /start")
+
+@router.message(StateFilter(FSMParserForm.price))
+async def warning_not_price(message: Message) -> None:
+    await message.answer(text='Некорректно выбрана цена, нажмите кнопку из списка\n'
+                              'Отправьте команду /cancel для завершение парсинга')
 

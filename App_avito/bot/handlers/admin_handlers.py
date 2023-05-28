@@ -13,21 +13,21 @@ admin_id = int(config.tg_bot.admin)
 
 # Этот хэндлер будет срабатывать, если апдейт от админа
 @router.message(IsAdmin(admin_id), Text(startswith='/admin'))
-async def answer_if_admins_update(message: Message):
+async def answer_if_admins_update(message: Message) -> None:
     first_name = message.from_user.first_name
     await message.answer(text=f'Добро пожаловать босс {first_name}, что хочешь добавить или удалить?!',
                          reply_markup=admin_kb)
 
 
 @router.message(Text(text=ADMIN_PANEL["add"]))
-async def operatsiya_city(message: Message):
+async def operatsiya_city(message: Message) -> None:
     await message.answer(text=f"Напиши город, который желаешь удалить")
     # Не реализована логика
     city_message = message.text
 
 
 @router.message(Text(text=ADMIN_PANEL["delete"]))
-async def operatsiya_city(message: Message):
+async def operatsiya_city(message: Message) -> None:
     await message.answer(text=f"Напиши город, который желаешь добавить")
     # Не реализована логика
     city_message = message.text
@@ -35,5 +35,5 @@ async def operatsiya_city(message: Message):
 
 # Этот хэндлер будет срабатывать, если апдейт не от админа
 @router.message(Text(startswith='/admin'))
-async def answer_if_not_admins_update(message: Message):
+async def answer_if_not_admins_update(message: Message) -> None:
     await message.answer(text='Нет прав доступа')

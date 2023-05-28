@@ -1,8 +1,5 @@
-from parser.start_parser import get_json
-from parser.parser import StartBrowser
+from parser import StartBrowser
 from bot.lexicon import CITY_EN, PRICE
-
-
 
 
 def get_data(city: str, category: str, user_id: int, price: list[int]) -> dict:
@@ -19,3 +16,15 @@ def translation_price(price: str) -> list[int]:
         if value == price:
             return list(map(int, key.split("-")))
 
+
+def transfer_text_telegram(value: str) -> str:
+    title, price, address, url, date = value
+    title = title.split(",")
+    text = (f"<b>Количество комнат:</b> {title[0]}\n"
+            f"<b>Площадь:</b> {title[1]}\n"
+            f"<b>Этаж:</b> {title[2]}\n"
+            f"<b>Цена:</b> {price} руб\n"
+            f"<b>Ссылка:</b> <a href='{url}'>{' '.join(title)}</a>\n"
+            f"<b>Адрес:</b> {address}\n"
+            f"<b>Дата публикации:</b> {date}")
+    return text

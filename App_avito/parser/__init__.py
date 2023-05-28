@@ -1,1 +1,2 @@
-from .start_parser import *
+from .parser import *
+

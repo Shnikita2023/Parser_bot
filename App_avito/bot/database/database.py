@@ -1,22 +1,30 @@
-import sqlite3
 from sqlite3 import OperationalError
 from bot.config_data import Config, load_config
+import psycopg2
 
 # Загружаем конфиг в переменную config
 config: Config = load_config()
+HOST = config.bd.host
+PORT = config.bd.port
+USER = config.bd.user
+PASSWORD = config.bd.password
+DB_NAME = config.bd.db_name
 
 
-class SqLiteClient:
+class Database:
     """Шаблон работы с БД"""
-
-    def __init__(self, filepath: str) -> None:
+    def __init__(self, filepath: str = None) -> None:
         self.filepath = filepath
         self.conn = None
 
     def create_conn(self) -> None:
         """Создание подключение"""
         try:
-            self.conn = sqlite3.connect(self.filepath, check_same_thread=False)
+            self.conn = psycopg2.connect(user=USER,
+                                         password=PASSWORD,
+                                         host=HOST,
+                                         port=PORT,
+                                         database=DB_NAME)
         except Exception as Ex:
             print(f"Ошибка подключение к БД {Ex}")
 
@@ -27,7 +35,8 @@ class SqLiteClient:
     def exucute_command(self, command: str, params: tuple) -> None:
         """Запрос на различные операции в БД"""
         if self.conn is not None:
-            self.conn.execute(command, params)
+            cur = self.conn.cursor()
+            cur.execute(command, params)
             self.conn.commit()
         else:
             raise ConnectionError("Вы не создали подключение")
@@ -35,9 +44,9 @@ class SqLiteClient:
     def exucute_select_command(self, command: str) -> list:
         """Запрос на выборку данных в БД"""
         if self.conn is not None:
-            cur = self.conn.cursor()
-            cur.execute(command)
-            return cur.fetchall()
+            with self.conn.cursor() as cur:
+                cur.execute(command)
+                return cur.fetchall()
         else:
             raise ConnectionError("Вы не создали подключение")
 
@@ -45,7 +54,7 @@ class SqLiteClient:
 class User:
     """База данных с работой пользователя"""
     CREATE_USER = """
-        INSERT INTO users (user_id, username, chat_id) VALUES (?, ?, ?)
+        INSERT INTO users (user_id, username, chat_id) VALUES (%s, %s, %s)
     """
     GET_USER = """
         SELECT * FROM users WHERE user_id = %s;
@@ -55,7 +64,7 @@ class User:
         SELECT id FROM users WHERE user_id = %s;
     """
 
-    def __init__(self, database_client: SqLiteClient) -> None:
+    def __init__(self, database_client: Database) -> None:
         self.database_client = database_client
 
     def setup(self) -> None:
@@ -71,6 +80,7 @@ class User:
     def create_user(self, user_id: int, username: str, chat_id: int) -> None:
         try:
             self.database_client.exucute_command(self.CREATE_USER, (user_id, username, chat_id))
+
         except OperationalError as Ex:
             print(f'Ошибка создание пользователя {Ex}')
 
@@ -78,7 +88,7 @@ class User:
         id_users = self.database_client.exucute_select_command(self.GET_ID % user_id)
         return id_users[0]
 
-
+#
 class Offer(User):
     """База данные с данными об объявлений"""
     GET_OFFER = f"""
@@ -88,7 +98,7 @@ class Offer(User):
           WHERE offers.offer_id = %s AND user_id = %s AND price BETWEEN %s AND %s;
       """
     INSERT_OFFER = """
-            INSERT INTO offers (offer_id, title, price, address, url, date, users_id) VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO offers (offer_id, title, price, address, url, date, users_id) VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
 
     def check_id_offer(self, range_price_list: list[int], offer_id: int, user_id: int) -> tuple | list:
@@ -98,18 +108,49 @@ class Offer(User):
                 self.GET_OFFER % (offer_id, user_id, price_min, price_max))
             id_users = self.get_id(user_id=user_id)
             return offer if offer else id_users
+
         except OperationalError as Ex:
             print(f"Ошибка получение offers_id ### {Ex}")
 
     def insert_offer(self, offer: tuple) -> None:
         try:
+
             self.database_client.exucute_command(self.INSERT_OFFER, offer)
+
         except OperationalError as Ex:
             print(f'Ошибка добавление данных в таблицу offers {Ex}')
 
 
 if __name__ == '__main__':
-    offer = Offer(database_client=SqLiteClient("Avito.db"))
-    offer.setup()
-    print(offer.get_user(user_id=1668957907))
+    values = (213131, "2k", 2000, "Shimdta", "httt://lov.com", "20.04.06", 1)
+    user = Offer(database_client=Database())
+    user.setup()
+    user.insert_offer(offer=values)
+
+
+
+
+
+        # GET_USER = """
+        #         SELECT * FROM users WHERE user_id = %s;
+        #     """
+        # try:
+        #     cursor.execute(GET_USER % 5)
+        # except OperationalError as Ex:
+        #     print(f'Ошибка создание пользователя {Ex}')
+        # command = """
+        # CREATE TABLE offers
+        # (
+        #     id SERIAL PRIMARY KEY,
+        #     offer_id INTEGER NOT NULL,
+        #     title TEXT,
+        #     price INTEGER,
+        #     address TEXT,
+        #     url TEXT,
+        #     date TEXT,
+        #     users_id INTEGER,
+        #     FOREIGN KEY (users_id) REFERENCES users (id)
+        # );
+        #  """
+
 

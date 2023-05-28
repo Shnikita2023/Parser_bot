@@ -1,27 +1,29 @@
+import json
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from fake_useragent import UserAgent
 from datetime import datetime
 from selectolax.parser import HTMLParser
 from urllib.parse import unquote
-from bot.database.database import SqLiteClient, Offer
+from bot.database.database import Offer, Database
 from bot.lexicon import CATEGORY
+from loguru import logger
 
-import json
 
 LINK = "https://www.avito.ru"
 URL = "https://www.avito.ru/moskva/kvartiry/sdam/na_dlitelnyy_srok-ASgBAgICAkSSA8gQ8AeQUg"
-PATH_BD = "/home/nikita/PycharmProjects/Parser_bot/App_avito/bot/database/Avito.db"
-
+logger.add(sink="parser.log", format="{time} {level} {message}", level="DEBUG", mode="w")
 
 class StartBrowser:
     """Запуск драйвера Селeниум"""
+    logger.info('Starting pars')
     useragent = UserAgent()
     options = webdriver.ChromeOptions()
     options.add_argument(f"user-agent={useragent.random}")
     options.add_argument("--disable-blink-features=AutomationControlled")  # Отключение режима веб-драйвера
-    # options.add_argument('headless')  # Отключение фонового режима
-    service = Service("/home/nikita/PycharmProjects/Parser_bot/App_avito/parser/driver/chromedriver")
+    options.add_argument('headless')  # Отключение фонового режима
+    service = Service(executable_path="/home/nikita/PycharmProjects/Parser_bot/App_avito/parser/driver/chromedriver") # путь до драйвера
 
     def __init__(self, city: str, user_id: int, range_price_list: list[int], category: str) -> None:
         self.city = city
@@ -39,7 +41,6 @@ class StartBrowser:
         URL = f"{LINK}/{self.city}{category_offer}"
         try:
             with self.browser as browser:
-                print(f"###[INFO]### Запись")
                 browser.get(url=URL)
                 html = browser.page_source
                 tree = HTMLParser(html)
@@ -55,8 +56,8 @@ class StartBrowser:
             return self.dict_offer
 
         except Exception as Ex:
-            print("Ошибка при получение страниц")
-            print(Ex)
+            logger.exception("Ошибка получение json данных")
+
 
     def get_json_item(self, data: dict, user_id: int) -> None:
         """Получение json словаря и item(ID)"""
@@ -69,14 +70,14 @@ class StartBrowser:
                             self.check_database(item=item, user_id=user_id)
 
         except Exception as Ex:
-            print("Ошибка при получение item")
-            print(Ex)
+            logger.exception("Ошибка получение item данных")
+
 
     def check_database(self, item: dict, user_id: int) -> None:
         """Проверка ID offer в БД и запись данных"""
         try:
             offer_id = item["id"]
-            database = Offer(database_client=SqLiteClient(PATH_BD))
+            database = Offer(database_client=Database())
             database.setup()
             data_offer = database.check_id_offer(self.range_price_list, offer_id=offer_id, user_id=user_id)
             if isinstance(data_offer, tuple):
@@ -84,10 +85,10 @@ class StartBrowser:
                 if offer:
                     offer += data_offer
                     database.insert_offer(offer=offer)
-                    print(f"Запись {offer_id} у пользователя {user_id} добавлена в БД")
+                    logger.info(f"Запись {offer_id} у пользователя {user_id} добавлена в БД")
 
         except Exception as Ex:
-            print(f"Ошибка при записи {offer_id} c пользователем {user_id} в БД ### {Ex}")
+            logger.exception(f"Ошибка при записи {offer_id} c пользователем {user_id} в БД ### {Ex}")
 
         finally:
             database.shutdown()
@@ -105,21 +106,12 @@ class StartBrowser:
                 self.dict_offer[item["id"]] = [title, price, address, url, date]
                 return (offer_id, title, price, address, url, date)
 
-
         except Exception as Ex:
-            print(Ex)
-            print("Ошибка получение данных(id, url, цены и т.д)")
+            logger.exception("Ошибка получение данных(id, url, цены и т.д)")
+
 
     def check_price(self, price: int) -> bool:
-        """Проверка с ценой пользователя и объявленим"""
+        """Проверка с ценой пользователя и объявлениeм"""
         price_min, price_max = self.range_price_list
         return price_min <= price <= price_max
 
-
-
-
-if __name__ == '__main__':
-    user = StartBrowser(city="perm", user_id=1668957907)
-    print(len(user.get_json()))
-    user2 = StartBrowser(city="ufa", user_id=1668957907)
-    print(len(user2.get_json()))

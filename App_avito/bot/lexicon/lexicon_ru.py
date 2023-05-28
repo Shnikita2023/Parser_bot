@@ -1,5 +1,3 @@
-
-
 CITY_EN: dict[str, str] = {
     "ufa": "Уфа",
     "moskva": "Москва",
@@ -8,6 +6,8 @@ CITY_EN: dict[str, str] = {
     "sochi": "Сочи",
     "ekaterinburg": "Екатеринбург",
 }
+
+
 
 LEXICON_RU: dict[str, str] = {
     '/start': '<b>Привет🤚!</b>\nС помощью этого бота, вы можете найти объявление на снятие квартиры.\n'
@@ -53,7 +53,3 @@ CATEGORY: dict[str, str] = {
     "buy_flat_button": "/kvartiry/prodam-ASgBAgICAUSSA8YQ?cd=1",
 }
 
-CATEGORY_PRICE: dict = {
-    "flat_long_button": "price_long_kb",
-    "flat_short_button": "price_short_kb",
-}
