@@ -1,0 +1,24 @@
+version: '3.9'
+
+
+services:
+
+  db_auth:
+    container_name: db_avito
+    ports:
+      - "5438:5432"
+    env_file:
+      - .env
+    image: postgres
+    restart: always
+
+  redis:
+    image: redis
+    restart: always
+    env_file:
+      - .env
+    container_name: db_redis
+    ports:
+      - "5377:6379"
+
+

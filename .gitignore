@@ -1,0 +1,8 @@
+.env
+*.pyc
+.idea/
+__pycache__/
+venv/
+/app/parser/driver/
+__main__.log
+parser.log
