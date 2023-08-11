@@ -6,7 +6,7 @@ services:
   db_auth:
     container_name: db_avito
     ports:
-      - "5438:5432"
+      - "5434:5432"
     env_file:
       - .env
     image: postgres
