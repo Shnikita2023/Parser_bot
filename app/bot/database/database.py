@@ -42,8 +42,3 @@ class Database:
         )
         self.session.add(offer)
         self.session.commit()
-
-#
-# d = Database()
-# print(d.get_user(user_id=1668957907))
-# d.create_offer(offer=(21311321221, 'Квартира', 4000, 'Шмидта', 'яндексю.ру', '1997.01.01', 1))
