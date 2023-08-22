@@ -4,7 +4,7 @@ from aiogram.types import KeyboardButton, InlineKeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from ..lexicon.lexicon_ru import CITY_EN, PRICE, ADMIN_PANEL
+from ..lexicon.lexicon import CITY_EN, PRICE, ADMIN_PANEL
 
 # ------- Создаем клавиатуру через ReplyKeyboardBuilder -------
 

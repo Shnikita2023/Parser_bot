@@ -3,7 +3,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.state import default_state
 from aiogram.types import Message
 
-from ..lexicon.lexicon_ru import LEXICON_RU
+from ..lexicon.lexicon import LEXICON_RU
 
 other_router: Router = Router()
 

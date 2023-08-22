@@ -5,19 +5,19 @@ from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery
 from ..fsm.states import FSMParserForm
 from ..keyboards.keyboards import start_kb, city_kb, kategory_kb, price_panel
-from ..lexicon.lexicon_ru import LEXICON_RU, CITY_EN, PRICE
+from ..lexicon.lexicon import LEXICON_RU, CITY_EN, PRICE
 from ..database.database import Database
 from ..services.services import translation_price, get_data, transfer_text_telegram
 
 user_router: Router = Router()
 
 
-# Этот хэндлер срабатывает на команду /start
 @user_router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message) -> None:
-    user_id = message.from_user.id
-    username = message.from_user.username
-    chat_id = message.chat.id
+    """Хэндлер срабатывает на команду /start"""
+    user_id: int = message.from_user.id
+    username: str = message.from_user.username
+    chat_id: int = message.chat.id
     database: Database = Database()
     user = database.get_user(user_id=user_id)
     if not user:
@@ -25,38 +25,39 @@ async def process_start_command(message: Message) -> None:
     await message.answer(text=LEXICON_RU['/start'], reply_markup=start_kb)
 
 
-# Этот хэндлер будет срабатывать на команду "/cancel" в любых состояниях,
-# кроме состояния по умолчанию, и отключать машину состояний
 @user_router.message(Command(commands='cancel'), ~StateFilter(default_state))
 async def process_cancel_command_state(message: Message, state: FSMContext) -> None:
+    """Этот хэндлер будет срабатывать на команду "/cancel" в любых состояниях,
+    кроме состояния по умолчанию, и отключать машину состояний
+    """
     await message.answer(text='Чтобы снова начать парсинг, нажмите /pars или /start для переход в меню')
-    # Сбрасываем состояние
     await state.clear()
 
 
-# Этот хэндлер будет срабатывать на команду "/cancel" в состоянии
-# по умолчанию и сообщать, что эта команда доступна в машине состояний
 @user_router.message(Command(commands='cancel'), StateFilter(default_state))
 async def process_cancel_command(message: Message) -> None:
+    """ Хэндлер будет срабатывать на команду "/cancel" в состоянии
+    по умолчанию и сообщать, что эта команда доступна в машине состояний
+    """
     await message.answer(text='Отменять нечего. Чтобы начать парсинг, нажмите /pars')
 
 
-# Этот хэндлер срабатывает на команду /help
 @user_router.message(Command(commands=['help']), StateFilter(default_state))
 async def process_help_command(message: Message) -> None:
+    """Хэндлер срабатывает на команду /help"""
     await message.answer(text=LEXICON_RU['/help'])
 
 
-# Этот хэндлер для смены города
 @user_router.message(Command(commands=['gorod']), StateFilter(default_state))
 async def process_help_command(message: Message, state: FSMContext) -> None:
+    """Хэндлер для смены города"""
     await state.set_state(FSMParserForm.name_city)
     await message.answer(text='Выберите город', reply_markup=city_kb)
 
 
-# Этот хэндлер для выбора категории
 @user_router.callback_query(lambda c: c.data == 'parsing_button', StateFilter(default_state))
 async def category_command(callback: CallbackQuery, state: FSMContext) -> None:
+    """Хэндлер для выбора категории"""
     await callback.message.answer(text='Выберите категорию парсинга', reply_markup=kategory_kb)
     await state.set_state(FSMParserForm.category_pars)
 
@@ -104,20 +105,21 @@ async def warning_not_city(message: Message) -> None:
 async def process_parsing(message: Message, state: FSMContext) -> None:
     await state.update_data(price=message.text)
     await message.answer(text="Ожидайте, пожалуйста...")
-    user_id = message.from_user.id
+    user_id: int = message.from_user.id
     data_state = await state.get_data()
     category_adit = data_state["category_pars"]
-    name_city = data_state["name_city"]
-    price_user = data_state["price"]
-    range_price_list = translation_price(price=price_user)
-    dict_offer = get_data(city=name_city, category=category_adit, user_id=user_id, price=range_price_list)
-    count = 0
+    name_city: str = data_state["name_city"]
+    price_user: str = data_state["price"]
+    range_price_list: list[int] = translation_price(price=price_user)
+    dict_offer: dict[str, list] = get_data(city=name_city, category=category_adit, user_id=user_id,
+                                           price=range_price_list)
+    count: int = 0
     for value in dict_offer.values():
-        text = transfer_text_telegram(value)
+        text: str = transfer_text_telegram(value)
         count += 1
         await message.answer(text=text)
     if not count:
-        text = "Объявлений нету!"
+        text: str = "Объявлений нету!"
         await message.answer(text=text)
 
     await state.clear()

@@ -3,7 +3,7 @@ from aiogram.types import Message
 
 from ..filters.filters import IsAdmin
 from ..keyboards.keyboards import admin_kb
-from ..lexicon.lexicon_ru import ADMIN_PANEL
+from ..lexicon.lexicon import ADMIN_PANEL
 from app.config import load_config, Config
 
 admin_router: Router = Router()

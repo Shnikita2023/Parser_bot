@@ -11,9 +11,9 @@ from urllib.parse import unquote
 from app.bot.database.database import Database
 from loguru import logger
 
-from app.bot.lexicon.lexicon_ru import CATEGORY
+from app.bot.lexicon.lexicon import CATEGORY
 
-LINK = "https://www.avito.ru"
+LINK: str = "https://www.avito.ru"
 logger.add(sink="parser.log", format="{time} {level} {message}", level="DEBUG", mode="w")
 
 
@@ -32,13 +32,13 @@ class StartBrowser:
         self.user_id: int = user_id
         self.range_price_list: list[int] = range_price_list
         self.category: str = category
-        self.dict_offer: dict = {}
+        self.dict_offer: dict[str, list] = {}
         self.browser = webdriver.Chrome(service=self.service, options=self.options)
         self.browser.implicitly_wait(120)
         self.browser.maximize_window()
         self.database: Database = Database()
 
-    def get_json(self) -> dict:
+    def get_json(self) -> dict[str, list]:
         """Получение Json данных"""
         category_offer: str = CATEGORY[self.category]
         URL: str = f"{LINK}/{self.city}{category_offer}"
@@ -76,9 +76,10 @@ class StartBrowser:
 
     def check_database(self, item: dict[str, Any], user_id: int) -> None:
         """Проверка ID offer в БД и запись данных"""
+        offer_id: int = item["id"]
         try:
-            offer_id: int = item["id"]
-            data_offer: int | None = self.database.get_offer(offer_id=offer_id, user_id=user_id, price_list=self.range_price_list)
+            data_offer: int | None = self.database.get_offer(offer_id=offer_id, user_id=user_id,
+                                                             price_list=self.range_price_list)
             if not data_offer:
                 offer: tuple = self.get_data(item)
                 if offer:
@@ -94,12 +95,12 @@ class StartBrowser:
     def get_data(self, item: dict) -> tuple | None:
         """Получение из json данных ID, цены, url, заголовок, адрес и дату и добавление в словарь"""
         try:
-            offer_id = item["id"]
-            price = item["priceDetailed"]["value"]
-            title = item["title"]
-            url = f'{LINK}{item["urlPath"]}'
-            address = item['geo']["formattedAddress"]
-            date = datetime.fromtimestamp(item["sortTimeStamp"] / 1000).strftime("%d.%m.%Y в %H:%M")
+            offer_id: int = item["id"]
+            price: int = item["priceDetailed"]["value"]
+            title: str = item["title"]
+            url: str = f'{LINK}{item["urlPath"]}'
+            address: str = item['geo']["formattedAddress"]
+            date: str = datetime.fromtimestamp(item["sortTimeStamp"] / 1000).strftime("%d.%m.%Y в %H:%M")
             if self.check_price(price):
                 self.dict_offer[item["id"]] = [title, price, address, url, date]
                 return offer_id, title, price, address, url, date

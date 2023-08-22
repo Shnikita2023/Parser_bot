@@ -3,7 +3,7 @@ from aiogram import BaseMiddleware
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import Message
 
-from ..lexicon.lexicon_ru import PRICE
+from ..lexicon.lexicon import PRICE
 
 
 class TrottlingMiddleware(BaseMiddleware):

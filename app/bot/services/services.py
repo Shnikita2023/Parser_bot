@@ -1,8 +1,9 @@
-from ..lexicon.lexicon_ru import CITY_EN, PRICE
+from ..lexicon.lexicon import CITY_EN, PRICE
 from app.parser.parser import StartBrowser
 
 
-def get_data(city: str, category: str, user_id: int, price: list[int]) -> dict:
+def get_data(city: str, category: str, user_id: int, price: list[int]) -> dict[str, list]:
+    """Получение оффера"""
     list_value = list(CITY_EN.values())
     list_key = list(CITY_EN.keys())
     position = list_value.index(city)
@@ -12,12 +13,14 @@ def get_data(city: str, category: str, user_id: int, price: list[int]) -> dict:
 
 
 def translation_price(price: str) -> list[int]:
+    """Проверка цены в словаре и перевод в числовой формат"""
     for key, value in PRICE.items():
         if value == price:
             return list(map(int, key.split("-")))
 
 
-def transfer_text_telegram(value: str) -> str:
+def transfer_text_telegram(value: list) -> str:
+    """Перевод текста в читаемо удобный формат телеграмма"""
     title, price, address, url, date = value
     title = title.split(",")
     text = (f"<b>Количество комнат:</b> {title[0]}\n"
