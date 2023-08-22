@@ -1,6 +1,7 @@
+from typing import Generator, Any
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import Config, load_config
 
@@ -22,6 +23,6 @@ engine = create_engine(DATABASE_URL)
 session_maker = sessionmaker(bind=engine, expire_on_commit=False)
 
 
-def get_session():
+def get_session() -> Generator[Session, Any, None]:
     with session_maker() as session:
         yield session

@@ -78,12 +78,12 @@ class StartBrowser:
         """Проверка ID offer в БД и запись данных"""
         try:
             offer_id: int = item["id"]
-            data_offer: tuple | None = self.database.get_offer(offer_id=offer_id, user_id=user_id, price_list=self.range_price_list)
+            data_offer: int | None = self.database.get_offer(offer_id=offer_id, user_id=user_id, price_list=self.range_price_list)
             if not data_offer:
                 offer: tuple = self.get_data(item)
                 if offer:
-                    id_user: tuple = self.database.get_user(user_id=user_id)
-                    offer += id_user
+                    id_user: int = self.database.get_user(user_id=user_id)
+                    offer += (id_user,)
                     logger.info(offer)
                     self.database.create_offer(*offer)
                     logger.info(f"Запись {offer_id} у пользователя {user_id} добавлена в БД")
