@@ -6,11 +6,10 @@ from aiogram.types import Message, CallbackQuery
 from ..fsm.states import FSMParserForm
 from ..keyboards.keyboards import start_kb, city_kb, kategory_kb, price_panel
 from ..lexicon.lexicon_ru import LEXICON_RU, CITY_EN, PRICE
-from ..database.database import User, Database
+from ..database.database import Database
 from ..services.services import translation_price, get_data, transfer_text_telegram
 
 user_router: Router = Router()
-database = User(Database())
 
 
 # Этот хэндлер срабатывает на команду /start
@@ -19,11 +18,10 @@ async def process_start_command(message: Message) -> None:
     user_id = message.from_user.id
     username = message.from_user.username
     chat_id = message.chat.id
-    database.setup()
+    database: Database = Database()
     user = database.get_user(user_id=user_id)
     if not user:
         database.create_user(user_id=user_id, username=username, chat_id=chat_id)
-    database.shutdown()
     await message.answer(text=LEXICON_RU['/start'], reply_markup=start_kb)
 
 

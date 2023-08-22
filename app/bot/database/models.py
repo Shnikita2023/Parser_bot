@@ -2,7 +2,7 @@ from sqlalchemy import String, ForeignKey, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 
-from ..database.database1 import Base
+from app.bot.database.session import Base
 
 
 class Users(Base):
