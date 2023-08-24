@@ -1,4 +1,4 @@
-from ..lexicon.lexicon import CITY_EN, PRICE
+from app.bot.lexicon.lexicon import CITY_EN, PRICE
 from app.parser.parser import StartBrowser
 
 

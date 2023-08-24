@@ -7,7 +7,7 @@ from ..fsm.states import FSMParserForm
 from ..keyboards.keyboards import start_kb, city_kb, kategory_kb, price_panel
 from ..lexicon.lexicon import LEXICON_RU, CITY_EN, PRICE
 from ..database.database import Database
-from ..services.services import translation_price, get_data, transfer_text_telegram
+from app.bot.services.service import translation_price, get_data, transfer_text_telegram
 
 user_router: Router = Router()
 

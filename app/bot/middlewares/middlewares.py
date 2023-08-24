@@ -16,7 +16,8 @@ class TrottlingMiddleware(BaseMiddleware):
                        event: Message,
                        data: Dict[str, Any]
                        ) -> Any:
-        list_allowed_command = ["/start", "/help", "/cancel", "/pars", "/admin"] + list(PRICE.values())  # Разрешенные команды
+        list_allowed_command = ["/start", "/help", "/cancel", "/pars", "/admin"] + list(
+            PRICE.values())  # Разрешенные команды
         if event.text.lower() in list_allowed_command:
             return await handler(event, data)
 
@@ -32,4 +33,3 @@ class TrottlingMiddleware(BaseMiddleware):
         await self.storage.redis.set(name=user, value=1, ex=5)
 
         return await handler(event, data)
-
